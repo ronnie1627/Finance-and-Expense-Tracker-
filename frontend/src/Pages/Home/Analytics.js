@@ -4,18 +4,23 @@ import { Container, Row } from "react-bootstrap";
 import CircularProgressBar from "../../components/CircularProgressBar";
 import LineProgressBar from "../../components/LineProgressBar";
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
-import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
 // import MovingIcon from '@mui/icons-material/Moving';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 
+// CHANGED: helper that formats numbers the Indian way (1,20,000)
+const formatINR = (value) => Number(value).toLocaleString("en-IN");
+
+// CHANGED: compares type ignoring upper/lower case ("Credit" or "credit")
+const isType = (item, type) =>
+  String(item.transactionType).toLowerCase() === type;
 
 const Analytics = ({ transactions }) => {
   const TotalTransactions = transactions.length;
-  const totalIncomeTransactions = transactions.filter(
-    (item) => item.transactionType === "credit"
+  const totalIncomeTransactions = transactions.filter((item) =>
+    isType(item, "credit")
   );
-  const totalExpenseTransactions = transactions.filter(
-    (item) => item.transactionType === "expense"
+  const totalExpenseTransactions = transactions.filter((item) =>
+    isType(item, "expense")
   );
 
   let totalIncomePercent =
@@ -26,15 +31,15 @@ const Analytics = ({ transactions }) => {
   // console.log(totalIncomePercent, totalExpensePercent);
 
   const totalTurnOver = transactions.reduce(
-    (acc, transaction) => acc + transaction.amount,
+    (acc, transaction) => acc + Number(transaction.amount),
     0
   );
   const totalTurnOverIncome = transactions
-    .filter((item) => item.transactionType === "credit")
-    .reduce((acc, transaction) => acc + transaction.amount, 0);
+    .filter((item) => isType(item, "credit"))
+    .reduce((acc, transaction) => acc + Number(transaction.amount), 0);
   const totalTurnOverExpense = transactions
-    .filter((item) => item.transactionType === "expense")
-    .reduce((acc, transaction) => acc + transaction.amount, 0);
+    .filter((item) => isType(item, "expense"))
+    .reduce((acc, transaction) => acc + Number(transaction.amount), 0);
 
   const TurnOverIncomePercent = (totalTurnOverIncome / totalTurnOver) * 100;
   const TurnOverExpensePercent = (totalTurnOverExpense / totalTurnOver) * 100;
@@ -64,8 +69,6 @@ const Analytics = ({ transactions }) => {
     "Transportation": '#1982C4',
     "Other": '#F45B69',
   };
-  
-  
 
   return (
     <>
@@ -106,11 +109,13 @@ const Analytics = ({ transactions }) => {
             <div className="card h-100">
               <div className="card-header bg-black text-white ">
                 <span style={{ fontWeight: "bold" }}>Total TurnOver:</span>{" "}
-                {totalTurnOver}
+                {/* CHANGED: rupee symbol + Indian format */}
+                ₹ {formatINR(totalTurnOver)}
               </div>
               <div className="card-body">
-                <h5 className="card-title" style={{color: "green"}}>Income: <ArrowDropUpIcon /> {totalTurnOverIncome} <CurrencyRupeeIcon /></h5>
-                <h5 className="card-title" style={{color: "red"}}>Expense: <ArrowDropDownIcon />{totalTurnOverExpense} <CurrencyRupeeIcon /></h5>
+                {/* CHANGED: rupee symbol + Indian format (icon removed) */}
+                <h5 className="card-title" style={{color: "green"}}>Income: <ArrowDropUpIcon /> ₹ {formatINR(totalTurnOverIncome)}</h5>
+                <h5 className="card-title" style={{color: "red"}}>Expense: <ArrowDropDownIcon /> ₹ {formatINR(totalTurnOverExpense)}</h5>
                 <div className="d-flex justify-content-center mt-3">
                   <CircularProgressBar
                     percentage={TurnOverIncomePercent.toFixed(0)}
@@ -135,11 +140,9 @@ const Analytics = ({ transactions }) => {
               </div>
               <div className="card-body">
                 {categories.map(category => {
-                  const income = transactions.filter(transaction => transaction.transactionType === "credit" && transaction.category === category).reduce((acc, transaction) => acc + transaction.amount, 0)
-                  
-                  const incomePercent = (income/ totalTurnOver) * 100;
+                  const income = transactions.filter(transaction => isType(transaction, "credit") && transaction.category === category).reduce((acc, transaction) => acc + Number(transaction.amount), 0)
 
- 
+                  const incomePercent = (income/ totalTurnOver) * 100;
 
                   return(
                     <>
@@ -161,10 +164,9 @@ const Analytics = ({ transactions }) => {
               </div>
               <div className="card-body">
                 {categories.map(category => {
-                  const expenses = transactions.filter(transaction => transaction.transactionType === "expense" && transaction.category === category).reduce((acc, transaction) => acc + transaction.amount, 0)
-                  
-                  const expensePercent = (expenses/ totalTurnOver) * 100;
+                  const expenses = transactions.filter(transaction => isType(transaction, "expense") && transaction.category === category).reduce((acc, transaction) => acc + Number(transaction.amount), 0)
 
+                  const expensePercent = (expenses/ totalTurnOver) * 100;
 
                   return(
                     <>

@@ -39,7 +39,7 @@ const Particle = () => {
             },
           },
           color: {
-            value: '#ffcc00',
+            value: '#14b8a6',
           },
           shape: {
             type: 'circle',
