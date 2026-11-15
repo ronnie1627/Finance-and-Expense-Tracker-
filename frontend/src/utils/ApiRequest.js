@@ -1,4 +1,7 @@
-const host = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const host =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "https://finance-and-expense-tracker-peach.vercel.app";
 export const setAvatarAPI = `${host}/api/auth/setAvatar`;
 export const registerAPI = `${host}/api/auth/register`;
 export const loginAPI = `${host}/api/auth/login`;
