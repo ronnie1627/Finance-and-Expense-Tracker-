@@ -1,20 +1,61 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { Button, Form, ProgressBar } from "react-bootstrap";
+import { budgetAPI } from "../../utils/ApiRequest";
 
-const STORAGE_KEY = "monthlyBudget";
+const OLD_KEY = "monthlyBudget";
 const formatINR = (value) => Number(value).toLocaleString("en-IN");
 
+const getUserId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    return user ? user._id : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 const BudgetCard = ({ transactions }) => {
-  const [budget, setBudget] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? Number(saved) : 0;
-    } catch (e) {
-      return 0;
-    }
-  });
+  const userId = getUserId();
+  const [budget, setBudget] = useState(0);
   const [input, setInput] = useState("");
   const [editing, setEditing] = useState(false);
+  const [error, setError] = useState("");
+
+  const saveToServer = async (value) => {
+    const { data } = await axios.post(`${budgetAPI}/${userId}`, {
+      budget: value,
+    });
+    if (data.success) setBudget(data.budget);
+    return data;
+  };
+
+  // Load the saved budget from MongoDB
+  useEffect(() => {
+    if (!userId) return;
+
+    const load = async () => {
+      try {
+        const { data } = await axios.get(`${budgetAPI}/${userId}`);
+        let value = data.budget || 0;
+
+        // One-time move of an older browser-saved budget to the database
+        if (value === 0) {
+          const old = Number(localStorage.getItem(OLD_KEY));
+          if (old > 0) {
+            await axios.post(`${budgetAPI}/${userId}`, { budget: old });
+            localStorage.removeItem(OLD_KEY);
+            value = old;
+          }
+        }
+        setBudget(value);
+      } catch (e) {
+        setError("Could not load your budget.");
+      }
+    };
+
+    load();
+  }, [userId]);
 
   // Total expenses in the current month
   const now = new Date();
@@ -41,23 +82,27 @@ const BudgetCard = ({ transactions }) => {
   if (percentUsed >= 100) barVariant = "danger";
   else if (percentUsed >= 70) barVariant = "warning";
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const value = Number(input);
-    if (value > 0) {
-      setBudget(value);
-      try {
-        localStorage.setItem(STORAGE_KEY, String(value));
-      } catch (e) {}
+    if (!(value > 0)) return;
+
+    try {
+      setError("");
+      await saveToServer(value);
       setInput("");
       setEditing(false);
+    } catch (e) {
+      setError("Could not save your budget. Is the backend running?");
     }
   };
 
-  const handleRemove = () => {
-    setBudget(0);
+  const handleRemove = async () => {
     try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {}
+      setError("");
+      await saveToServer(0);
+    } catch (e) {
+      setError("Could not remove your budget.");
+    }
   };
 
   const showForm = budget === 0 || editing;
@@ -70,6 +115,8 @@ const BudgetCard = ({ transactions }) => {
           <span>{monthName}</span>
         </div>
         <div className="card-body">
+          {error && <p style={{ color: "red" }}>{error}</p>}
+
           {showForm ? (
             <div className="d-flex gap-2 align-items-center">
               <Form.Control
