@@ -33,6 +33,8 @@ const Home = () => {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [transactions, setTransactions] = useState([]);
+  // NEW: this year's transactions, used only by the monthly budget card
+  const [monthTransactions, setMonthTransactions] = useState([]);
   const [refresh, setRefresh] = useState(false);
   const [frequency, setFrequency] = useState("7");
   const [type, setType] = useState("all");
@@ -106,6 +108,7 @@ const Home = () => {
       !transactionType
     ) {
       toast.error("Please enter all the fields", toastOptions);
+      return; // CHANGED: stop here so empty data is not sent
     }
     setLoading(true);
 
@@ -137,12 +140,7 @@ const Home = () => {
     setFrequency("7");
   };
 
-
-  
-
-
   useEffect(() => {
-
     const fetchAllTransactions = async () => {
       try {
         setLoading(true);
@@ -155,9 +153,9 @@ const Home = () => {
           type: type,
         });
         console.log(data);
-  
+
         setTransactions(data.transactions);
-  
+
         setLoading(false);
       } catch (err) {
         // toast.error("Error please Try again...", toastOptions);
@@ -167,6 +165,28 @@ const Home = () => {
 
     fetchAllTransactions();
   }, [refresh, frequency, endDate, type, startDate]);
+
+  // NEW: load this year's transactions for the budget card,
+  // ignoring the frequency and type filters
+  useEffect(() => {
+    const fetchBudgetTransactions = async () => {
+      if (!cUser) return;
+      try {
+        const { data } = await axios.post(getTransactions, {
+          userId: cUser._id,
+          frequency: "365",
+          startDate: null,
+          endDate: null,
+          type: "all",
+        });
+        setMonthTransactions(data.transactions || []);
+      } catch (err) {
+        console.log("Budget data failed to load:", err);
+      }
+    };
+
+    fetchBudgetTransactions();
+  }, [cUser, refresh]);
 
   const handleTableClick = (e) => {
     setView("table");
@@ -258,7 +278,7 @@ const Home = () => {
                           name="title"
                           type="text"
                           placeholder="Enter Transaction Name"
-                          value={values.name}
+                          value={values.title}
                           onChange={handleChange}
                         />
                       </Form.Group>
@@ -394,7 +414,12 @@ const Home = () => {
               </>
             ) : (
               <>
-                <Analytics transactions={transactions} user={cUser} />
+                {/* CHANGED: also pass monthTransactions for the budget card */}
+                <Analytics
+                  transactions={transactions}
+                  monthTransactions={monthTransactions}
+                  user={cUser}
+                />
               </>
             )}
             <ToastContainer />
