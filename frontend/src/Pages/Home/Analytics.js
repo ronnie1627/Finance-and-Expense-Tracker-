@@ -4,13 +4,13 @@ import CircularProgressBar from "../../components/CircularProgressBar";
 import LineProgressBar from "../../components/LineProgressBar";
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import BudgetCard from "./BudgetCard";
 
 const formatINR = (value) => Number(value).toLocaleString("en-IN");
 
 const isType = (item, type) =>
   String(item.transactionType).toLowerCase() === type;
 
-// NEW: percentage that returns 0 instead of NaN when dividing by zero
 const percent = (part, total) => (total > 0 ? (part / total) * 100 : 0);
 
 const Analytics = ({ transactions }) => {
@@ -45,7 +45,6 @@ const Analytics = ({ transactions }) => {
   const TurnOverIncomePercent = percent(totalTurnOverIncome, totalTurnOver);
   const TurnOverExpensePercent = percent(totalTurnOverExpense, totalTurnOver);
 
-  // NEW: balance = income minus expenses
   const balance = totalTurnOverIncome - totalTurnOverExpense;
   const balanceColor = balance >= 0 ? "#22c55e" : "#ef4444";
 
@@ -79,7 +78,7 @@ const Analytics = ({ transactions }) => {
     <>
       <Container className="mt-5 ">
         <Row>
-          {/* NEW: balance card */}
+          {/* Balance card */}
           <div className="col-12 mb-4">
             <div className="card">
               <div className="card-header bg-black text-white">
@@ -105,6 +104,9 @@ const Analytics = ({ transactions }) => {
               </div>
             </div>
           </div>
+
+          {/* Monthly budget card */}
+          <BudgetCard transactions={transactions} />
 
           <div className="col-lg-3 col-md-6 mb-4">
             <div className="card h-100">
