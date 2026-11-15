@@ -1,29 +1,26 @@
 import express from "express";
 import cors from "cors";
 import { connectDB } from "./DB/Database.js";
-import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
 import transactionRoutes from "./Routers/Transactions.js";
 import userRoutes from "./Routers/userRouter.js";
-import path from "path";
 
 dotenv.config({ path: "./config/config.env" });
 const app = express();
 
 const port = process.env.PORT || 5000;
 
-connectDB();
-
 const allowedOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
-  // add your own deployed frontend URL here later
-];
+  process.env.CLIENT_URL,
+].filter(Boolean);
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     origin: allowedOrigins,
@@ -34,8 +31,17 @@ app.use(
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("dev"));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+
+// Make sure the database is connected before handling any request
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("Database connection failed:", err.message);
+    res.status(500).json({ success: false, message: "Database connection failed" });
+  }
+});
 
 // Router
 app.use("/api/v1", transactionRoutes);
@@ -45,6 +51,12 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.listen(port, () => {
-  console.log(`Server is listening on http://localhost:${port}`);
-});
+// Only start a server when running on your own computer (not on Vercel)
+if (!process.env.VERCEL) {
+  connectDB().catch((err) => console.error(err.message));
+  app.listen(port, () => {
+    console.log(`Server is listening on http://localhost:${port}`);
+  });
+}
+
+export default app;

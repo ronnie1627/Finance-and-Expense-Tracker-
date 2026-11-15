@@ -1,9 +1,6 @@
 import mongoose from "mongoose";
 import validator from "validator";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
 
-// User Schema Model - (Name, email, password, creation Date) with validation rules
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -24,7 +21,6 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
-
     avatarImage: {
         type: String,
         default: ""
@@ -33,13 +29,27 @@ const userSchema = new mongoose.Schema({
         type: [],
     },
 
+    // NEW: monthly budget saved per user
+    monthlyBudget: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
+
+    // NEW: forgot-password fields
+    resetPasswordToken: {
+        type: String,
+        default: "",
+    },
+    resetPasswordExpires: {
+        type: Date,
+        default: null,
+    },
+
     createdAt: {
         type:Date,
         default: Date.now,
     },
-
-    
-
 });
 
 const User = mongoose.model("User", userSchema);

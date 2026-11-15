@@ -1,10 +1,25 @@
 import mongoose from "mongoose";
 
-export const connectDB = async (req, res) => {
-    const db = process.env.MONGO_URL;
-
-    const {connection} = await mongoose.connect(db, { useNewUrlParser: true });
-
-    console.log(`MongoDB Connected to ${connection.host}`);
-
+let cached = global._mongooseConn;
+if (!cached) {
+  cached = global._mongooseConn = { conn: null, promise: null };
 }
+
+export const connectDB = async () => {
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(process.env.MONGO_URL).then((m) => {
+      console.log(`MongoDB Connected to ${m.connection.host}`);
+      return m;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (err) {
+    cached.promise = null;
+    throw err;
+  }
+  return cached.conn;
+};
